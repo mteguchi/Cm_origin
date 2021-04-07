@@ -1,0 +1,15 @@
+# Using Dirichlet distribution, it determines parameters for
+# haplotype frequencies - should be quite obvious ...
+# 
+
+
+model{
+	
+	# https://sourceforge.net/p/mcmc-jags/discussion/610037/thread/c21ef62a/
+	y ~ ddirich(alpha[1:N] + 0.01)
+
+	for (k in 1:N){
+		alpha[k] ~ dunif(0, 1)
+	}
+	
+}
