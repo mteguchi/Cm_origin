@@ -1,0 +1,67 @@
+---
+title: "Determining the probability of nesting beach origin"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(readr)
+library(jagsUI)
+```
+
+
+This is an attempt to determine the probability of origin of green turtles using various data sources. These data include haplotypes (nesting beach frequencies and samples) and sizes of mature individuals at rookeries.
+
+```{r}
+col.def <- cols(Haplotype = col_character(),
+                NWH = col_integer(),
+                RI = col_integer(),
+                Mexico = col_integer(),
+                CostaRica = col_integer(),
+                Galapagos = col_integer(),
+                SDB = col_integer())
+
+haplo.freq <- read_csv(file = "data/hap_Dutton2019_1.csv",
+                       col_types = col.def)
+
+# A lot of NAs, some of which do not equal to zero due to the limited
+# sample sizes... When the total sample size is >100, the probability of having an unobserved haplotype is < 0.01. But, when the total sample size is ~20 (Costa Rica), then the same probability is ~ 0.05, which is not negligible. 
+
+# Turn NAs into zeros - unobserved but not absent:
+haplo.freq[is.na(haplo.freq)] <- 0
+
+# Basically... for each location, we are estimating the relative
+# frequency of each haplotype given the sample size. We can start
+# with a uniform Dirichlet, then use these data to update the 
+# probabilities. These locations are independent of each other,
+# or at least I'll treat them as they are. 
+
+jags.data <- list(y = as.vector(haplo.freq[, 2]/sum(haplo.freq[,2])),
+                  N = nrow(haplo.freq))
+
+params <- c("alpha")
+
+jm <- jags(jags.data,
+           inits = NULL,
+           parameters.to.save = params,
+           model.file = "models/model_haplo_freq_v1.txt",
+           n.chains = 5,
+           n.burnin = 1000,
+           n.thin = 5,
+           n.iter = 5000,
+           DIC = T, parallel = T)
+
+```
+
+```{r}
+# How do we incorporate this difference in to this analysis?
+
+# from Dutton et al. 2019 supplementary material
+# Approximate distance in km to SDB
+distance <- data.frame(NWH = 4873,
+                       RI = 1595,
+                       Mexico = 2100,
+                       CostaRica = 4045,
+                       Galapagos = 4516)
+```
+
