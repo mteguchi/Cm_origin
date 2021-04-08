@@ -36,20 +36,33 @@ haplo.freq[is.na(haplo.freq)] <- 0
 # probabilities. These locations are independent of each other,
 # or at least I'll treat them as they are. 
 
-jags.data <- list(y = as.vector(haplo.freq[, 2]/sum(haplo.freq[,2])),
-                  N = nrow(haplo.freq))
 
-params <- c("alpha")
+haplo.freq.mat <- as.matrix(haplo.freq[, c(2:ncol(haplo.freq))])
 
-jm <- jags(jags.data,
-           inits = NULL,
-           parameters.to.save = params,
-           model.file = "models/model_haplo_freq_v1.txt",
-           n.chains = 5,
-           n.burnin = 1000,
-           n.thin = 5,
-           n.iter = 5000,
-           DIC = T, parallel = T)
+jags.data <- list(y = haplo.freq.mat,
+                  n.loc = ncol(haplo.freq.mat), 
+                  n = colSums(haplo.freq.mat),
+                  n.haplo = nrow(haplo.freq.mat))
+
+params <- c("pi")
+
+if (!exists("RData/haplo_freq_v1.rds")){
+  jm <- jags(jags.data,
+             inits = NULL,
+             parameters.to.save = params,
+             model.file = "models/model_haplo_freq_v1.txt",
+             n.chains = 5,
+             n.burnin = 1000,
+             n.thin = 5,
+             n.iter = 5000,
+             DIC = T, parallel = T)
+  
+  saveRDS(jm, file = "RData/haplo_freq_v1.rds")
+  
+} else {
+  jm <- readRDS(file = "RData/haplo_freq_v1.rds")
+}
+
 
 ```
 

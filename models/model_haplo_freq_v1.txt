@@ -1,15 +1,28 @@
 # Using Dirichlet distribution, it determines parameters for
 # haplotype frequencies - should be quite obvious ...
 # 
+# But this doesn't work so well. Note that Dirichlet distribution is not
+# a friendly one when many outcomes are zeros... Changed to multinomial and
+# it seems to work better. Note that multinomial parameters (ps) are not 
+# normalized. 
 
 
 model{
 	
 	# https://sourceforge.net/p/mcmc-jags/discussion/610037/thread/c21ef62a/
-	y ~ ddirich(alpha[1:N] + 0.01)
-
-	for (k in 1:N){
-		alpha[k] ~ dunif(0, 1)
+	#y ~ ddirich(alpha[1:N] + 0.01)  # changed to multinomial as seen below. 
+	
+	for (k1 in 1:n.loc){
+    y[1:n.haplo, k1] ~ dmulti(pi[1:n.haplo, k1], n[n.loc])
+	}
+  
+  # flat dirichlet prior 
+	for (k in 1:n.haplo){
+	  alpha[k] <- 1
 	}
 	
+  for (k1 in 1:n.loc){
+	  pi[1:n.haplo, k1] ~ ddirich(alpha) #~ dunif(0, 1)
+  }
+
 }
